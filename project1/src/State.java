@@ -1,18 +1,26 @@
+import java.util.Arrays;
+
 public class State {
 	
-	private static final int MISSIONARIES = 0;
-	private static final int CANNIBALS = 1;
-	private static final int BOAT_LOCATION = 2;
+	public static final int MISSIONARIES = 0;
+	public static final int CANNIBALS = 1;
+	public static final int BOAT_LOCATION = 2;
 	
 	private static final int VECTOR_LENGTH = 3;
 	
 	private int[] start = new int[VECTOR_LENGTH];
 	private int[] end = new int[VECTOR_LENGTH];
 	
+	private int maxMissionaries;
+	private int maxCannibals;
+	
 	private State(int[] start, int[] end) throws Exception {
 		
 		this.start = start;
 		this.end = end;
+		
+		maxMissionaries = start[MISSIONARIES] + end[MISSIONARIES];
+		maxCannibals = start[CANNIBALS] + end[CANNIBALS];
 	}
 	
 	public static State createState(int[] start, int[] end) throws Exception {
@@ -30,13 +38,17 @@ public class State {
 	
 	public static boolean validState(State state) {
 		
-		if (state.getStart()[MISSIONARIES] < state.getStart()[CANNIBALS])
+		if (state.getStart()[MISSIONARIES] != 0 && state.getStart()[MISSIONARIES] < state.getStart()[CANNIBALS])
 			return false;
-		else if (state.getEnd()[MISSIONARIES] < state.getEnd()[CANNIBALS])
+		else if (state.getEnd()[MISSIONARIES] != 0 && state.getEnd()[MISSIONARIES] < state.getEnd()[CANNIBALS])
 			return false;
-		else if (state.getStart()[BOAT_LOCATION] != 1 && state.getStart()[BOAT_LOCATION] != 0)
+		else if (state.getStart()[MISSIONARIES] + state.getEnd()[MISSIONARIES] > state.maxMissionaries)
 			return false;
-		else if (state.getEnd()[BOAT_LOCATION] != 1 && state.getEnd()[BOAT_LOCATION] != 0)
+		else if (state.getStart()[CANNIBALS] + state.getEnd()[CANNIBALS] > state.maxCannibals)
+			return false;
+		else if (state.getStart()[MISSIONARIES] < 0 || state.getEnd()[MISSIONARIES] < 0)
+			return false;
+		else if (state.getStart()[CANNIBALS] < 0 || state.getEnd()[CANNIBALS] < 0)
 			return false;
 		
 		return true;
@@ -69,4 +81,48 @@ public class State {
 		
 		return start[BOAT_LOCATION] == 1;
 	}
+	
+	public int getMaxMissionaries() {
+		return maxMissionaries;
+	}
+	
+	public int getMaxCannibals() {
+		return maxCannibals;
+	}
+	
+	public String toString() {
+		
+		return "Start: " + Arrays.toString(start) + " End: " + Arrays.toString(end);
+	}
+	
+	@Override
+    public boolean equals(Object object) {
+		
+		State state = (State) object;
+		
+		return (Arrays.equals(start, state.getStart()) && Arrays.equals(end, state.getEnd()));
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
