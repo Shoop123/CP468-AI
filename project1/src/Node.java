@@ -1,0 +1,19 @@
+public class Node {
+
+	private State state;
+	private Node[] nodes;
+	
+	Node(State state, Node[] nodes) {
+		
+		this.state = state;
+		this.nodes = nodes;
+	}
+
+	public State getState() {
+		return state;
+	}
+
+	public Node[] getNodes() {
+		return nodes;
+	}
+}
