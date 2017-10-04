@@ -69,6 +69,11 @@ public class State {
 		return createState(newStart, newEnd);
 	}
 
+	public boolean isGoal() {
+		
+		return start[MISSIONARIES] == 0 && start[CANNIBALS] == 0 && end[MISSIONARIES] == maxMissionaries && end[CANNIBALS] == maxCannibals;
+	}
+	
 	public int[] getStart() {
 		return start;
 	}

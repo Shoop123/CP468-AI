@@ -1,19 +1,14 @@
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Stack;
 
 public class Main {
 
 	public static void main(String[] args) throws Exception {		
-		Node initialNode = createStateSpace(3, 3);
-		
-		System.out.println();
-		
-//		System.out.println("Initial: " + initialNode.getState());
-		
-		dig(initialNode);
+		dfs(3, 3);
 	}
 	
-	private static Node createStateSpace(int numMissionaries, int numCannibals) {
+	private static Node dfs(int numMissionaries, int numCannibals) {
 		
 		State initialState;
 		
@@ -29,13 +24,21 @@ public class Main {
 		
 		ArrayList<State> existingStates = new ArrayList<State>();
 		existingStates.add(initialState);
+		
+		Stack<Node> path = new Stack<Node>();
+		path.push(initialNode);
 				
-		createStateSpaceAux(initialNode, existingStates);
+		dfs_traverse(initialNode, existingStates, path);
+		
+		for (Node node : path) {
+			
+			System.out.println(node.getState());
+		}
 		
 		return initialNode;
 	}
 	
-	private static void createStateSpaceAux(Node node, ArrayList<State> existingStates) {
+	private static void dfs_traverse(Node node, ArrayList<State> existingStates, Stack<Node> path) {
 		
 		final int BOAT_CAPACITY = 2;
 		
@@ -80,25 +83,21 @@ public class Main {
 						
 						node.addNode(new Node(state));
 					}
-				} catch (Exception e) {
-					
-					System.out.format("Invalid state with start params: {%d, %d, %d}\n", start[State.MISSIONARIES], start[State.CANNIBALS], start[State.BOAT_LOCATION]);
-				}
+				} catch (Exception e) {}
 			}
 		}
+			
+		if (node.getNodes().isEmpty())
+			path.pop();
 		
 		for (Node newNode : node.getNodes()) {
-			createStateSpaceAux(newNode, existingStates);
+			
+			path.push(newNode);
+			
+			if (!newNode.getState().isGoal())
+				dfs_traverse(newNode, existingStates, path);
+			else break;
 		}
-	}
-	
-	private static void dig(Node top) {
-		
-		System.out.println(top.getState());
-		
-		if (top.getNodes().size() > 0)
-			for (Node node : top.getNodes())				
-				dig(node);
 	}
 }
 
