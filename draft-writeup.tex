@@ -3,18 +3,52 @@
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{float}
-\title{\textbf{CP468 Assignment 1\\Missionaries and Cannibals}}
-\author{Lyndon Rey\\
-		Tyler Farkas\\
-		Daniel Berezovski}
-\date{October 4th, 2017}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{fancyhdr}
 
+\pagestyle{fancy}
+\lhead{CP468 --- Group 12}
+\chead{\today}
+\rhead{Assignment 1}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Java,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
 \setcounter{section}{-1}
 
 \begin{document}
+\begin{titlepage}
+	\centering
+	{\scshape\Large Assignment 1\\CP468\\Group 12\par}
+	\vspace{1.5cm}
+	{\huge\bfseries Missionaries and Cannibals\par}
+	\vspace{2cm}
+	{\Large\itshape Lyndon Rey\\
+		Tyler Farkas\\
+		Daniel Berezovski \par}
 
-\maketitle
+	\vfill
 
+% Bottom of the page
+	{\large \today\par}
+\end{titlepage}
 \section{Introduction}
 \subsection{States}
 For the purposes of this assignment, the following notation will be used. Firstly, any given state \(s\) will be represented by a set of two column vectors in \(\mathbb{R}^3\), both containing the elements \(m, c, b\); these elements represent the number of missionaries, number of cannibals, and whether the boat is present, respectively. Each column vector in the set represents a shoreline given in the problem: the left vector represents the starting shore, and the right vector represents the finishing shore, and the subscripts \(L\) and \(R\) represent the left and right sides, respectively. The right shore is entirely dependent on the left, as the total number of missionaries and cannibals on both shores cannot exceed the initial number, notated as \(M\) and \(C\) respectively. There is always 1 boat (\(B=1\)), so if the left shore has the boat (i.e. \(b=1)\), then the right shore will not (i.e. \(b=0)\). Thus, the abstract state can be defined as follows:
@@ -239,4 +273,254 @@ In the following state space diagram, it is assumed that each river crossing alt
 \end{figure}
 
 \section{Implementation}
+For the implementation of the above algorithm, we used a depth-first search strategy written in Java. The main method contains the ability to change the starting number of missionaries and cannibals, as well as the boat capacity; with these parameters, the program outputs the final DFS-generated optimal path as a terminal output, with each line representing a node passed through. \vfill
+\subsection{Classes}
+\subsubsection{Main}
+The main class contains the DFS implementation, using the node and state classes (sections 3.1.2 and 3.1.3 respectively).
+\begin{lstlisting}
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Stack;
+
+public class Main {
+
+	public static void main(String[] args) throws Exception {		
+		dfs(3, 3);
+	}
+	
+	private static Node dfs(int numMissionaries, int numCannibals) {
+		
+		State initialState;
+		
+		try {
+			
+			initialState = State.createState(new int[] {numMissionaries, numCannibals, 1}, new int[] {0, 0, 0});
+		} catch (Exception e) {
+			
+			return null;
+		}
+		
+		Node initialNode = new Node(initialState);
+		
+		ArrayList<State> existingStates = new ArrayList<State>();
+		existingStates.add(initialState);
+		
+		Stack<Node> path = new Stack<Node>();
+		path.push(initialNode);
+				
+		dfs_traverse(initialNode, existingStates, path);
+		
+		for (Node node : path) {
+			
+			System.out.println(node.getState());
+		}
+		
+		return initialNode;
+	}
+	
+	private static void dfs_traverse(Node node, ArrayList<State> existingStates, Stack<Node> path) {
+		
+		final int BOAT_CAPACITY = 2;
+		
+		for (int i = 0; i <= BOAT_CAPACITY; i++) {
+						
+			for (int j = 0; j <= BOAT_CAPACITY; j++) {
+				
+				if (i == 0 && j == 0 || i + j > BOAT_CAPACITY) continue;
+				
+				int[] start = Arrays.copyOf(node.getState().getStart(), node.getState().getStart().length);
+				int[] end = Arrays.copyOf(node.getState().getEnd(), node.getState().getEnd().length);
+				
+				if (start[State.BOAT_LOCATION] == 1) {
+					
+					start[State.MISSIONARIES] -= i;
+					end[State.MISSIONARIES] += i;
+					
+					start[State.CANNIBALS] -= j;
+					end[State.CANNIBALS] += j;
+					
+					start[State.BOAT_LOCATION] = 0;
+					end[State.BOAT_LOCATION] = 1;
+				} else {
+					
+					start[State.MISSIONARIES] += i;
+					end[State.MISSIONARIES] -= i;
+					
+					start[State.CANNIBALS] += j;
+					end[State.CANNIBALS] -= j;
+					
+					start[State.BOAT_LOCATION] = 1;
+					end[State.BOAT_LOCATION] = 0;
+				}
+				
+				try {
+					
+					State state = State.createState(start, end);
+					
+					if (!existingStates.contains(state)) {
+						
+						existingStates.add(state);
+						
+						node.addNode(new Node(state));
+					}
+				} catch (Exception e) {}
+			}
+		}
+			
+		if (node.getNodes().isEmpty())
+			path.pop();
+		
+		for (Node newNode : node.getNodes()) {
+			
+			path.push(newNode);
+			
+			if (!newNode.getState().isGoal())
+				dfs_traverse(newNode, existingStates, path);
+			else break;
+		}
+	}
+}  
+\end{lstlisting}
+\subsubsection{Node}
+The Node class contains a State (section 3.1.2), as well as an array of all nodes above it.
+\begin{lstlisting}
+import java.util.ArrayList;
+
+public class Node {
+
+	private State state;
+	private ArrayList<Node> nodes = new ArrayList<Node>();
+	
+	Node(State state) {
+		
+		this.state = state;
+	}
+
+	public State getState() {
+		return state;
+	}
+
+	public ArrayList<Node> getNodes() {
+		return nodes;
+	}
+	
+	public void addNode(Node node) {
+		nodes.add(node);
+	}
+}
+\end{lstlisting}
+\subsubsection{State}
+The State class contains all the information required to create a valid state, including the left shore and right shore vectors, and maximum values for missionaries, cannibals, and boat capacity. Also, it contains the method for the transition model (`move'), goal state check (`isGoal'), and validity check (`validState').
+\begin{lstlisting}
+import java.util.Arrays;
+
+public class State {
+	
+	public static final int MISSIONARIES = 0;
+	public static final int CANNIBALS = 1;
+	public static final int BOAT_LOCATION = 2;
+	
+	private static final int VECTOR_LENGTH = 3;
+	
+	private int[] start = new int[VECTOR_LENGTH];
+	private int[] end = new int[VECTOR_LENGTH];
+	
+	private int maxMissionaries;
+	private int maxCannibals;
+	
+	private State(int[] start, int[] end) throws Exception {
+		
+		this.start = start;
+		this.end = end;
+		
+		maxMissionaries = start[MISSIONARIES] + end[MISSIONARIES];
+		maxCannibals = start[CANNIBALS] + end[CANNIBALS];
+	}
+	
+	public static State createState(int[] start, int[] end) throws Exception {
+		
+		if (start.length > VECTOR_LENGTH || end.length > VECTOR_LENGTH)
+			throw new Exception("Make sure both of the arrays have a length of 3");
+		
+		State newState = new State(start, end);
+		
+		if (!validState(newState))
+			throw new Exception("State is invalid");
+		
+		return newState;
+	}
+	
+	public static boolean validState(State state) {
+		
+		if (state.getStart()[MISSIONARIES] != 0 && state.getStart()[MISSIONARIES] < state.getStart()[CANNIBALS])
+			return false;
+		else if (state.getEnd()[MISSIONARIES] != 0 && state.getEnd()[MISSIONARIES] < state.getEnd()[CANNIBALS])
+			return false;
+		else if (state.getStart()[MISSIONARIES] + state.getEnd()[MISSIONARIES] > state.maxMissionaries)
+			return false;
+		else if (state.getStart()[CANNIBALS] + state.getEnd()[CANNIBALS] > state.maxCannibals)
+			return false;
+		else if (state.getStart()[MISSIONARIES] < 0 || state.getEnd()[MISSIONARIES] < 0)
+			return false;
+		else if (state.getStart()[CANNIBALS] < 0 || state.getEnd()[CANNIBALS] < 0)
+			return false;
+		
+		return true;
+	}
+	
+	public State move(int numMissionaries, int numCannibals) throws Exception {		
+		
+		int[] newStart = this.start;
+		newStart[MISSIONARIES] += numMissionaries;
+		newStart[CANNIBALS] += numCannibals;
+		newStart[BOAT_LOCATION] = start[BOAT_LOCATION] == 1 ? 0 : 1;
+	
+		int[] newEnd = this.end;
+		newEnd[MISSIONARIES] -= numMissionaries;
+		newEnd[CANNIBALS] -= numCannibals;
+		newEnd[BOAT_LOCATION] = start[BOAT_LOCATION] == 1 ? 1 : 0;
+		
+		return createState(newStart, newEnd);
+	}
+
+	public boolean isGoal() {
+		
+		return start[MISSIONARIES] == 0 && start[CANNIBALS] == 0 && end[MISSIONARIES] == maxMissionaries && end[CANNIBALS] == maxCannibals;
+	}
+	
+	public int[] getStart() {
+		return start;
+	}
+
+	public int[] getEnd() {
+		return end;
+	}
+	
+	public boolean boatAtStart() {
+		
+		return start[BOAT_LOCATION] == 1;
+	}
+	
+	public int getMaxMissionaries() {
+		return maxMissionaries;
+	}
+	
+	public int getMaxCannibals() {
+		return maxCannibals;
+	}
+	
+	public String toString() {
+		
+		return "Start: " + Arrays.toString(start) + " End: " + Arrays.toString(end);
+	}
+	
+	@Override
+    public boolean equals(Object object) {
+		
+		State state = (State) object;
+		
+		return (Arrays.equals(start, state.getStart()) && Arrays.equals(end, state.getEnd()));
+    }
+}
+\end{lstlisting}
 \end{document}
